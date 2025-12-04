@@ -1,0 +1,60 @@
+###
+# Test Script for Event-Driven Audit Logging
+#
+# QA Engineer: Your AI Assistant
+# Objective: Verify that CREATE and UPDATE operations on the Product entity
+#            are correctly logged in the AuditLog table.
+#
+
+# Base URL for the application
+@baseUrl = http://localhost:8080
+
+# File-level variable to store the ID of the created product
+@productId = 1
+
+### 1. Create a new Product
+#
+# Action: Sends a POST request to create a "Gaming Mouse".
+# Expected Result (in Database):
+#   - A new row in the `product` table.
+#   - A new row in the `audit_log` table with action="CREATE".
+#   - The `changesJson` in the audit log will show the initial values.
+#
+# @name createProductRequest
+POST {{baseUrl}}/products
+Content-Type: application/json
+
+{
+  "name": "Gaming Mouse",
+  "price": 50.0
+}
+
+> {%
+    // Capture the 'id' from the response and save it to the file variable
+    client.global.set("productId", response.body.id);
+%}
+
+### 2. Update the Product's Price
+#
+# Action: Sends a POST request to update the price of the product created above.
+# Pre-requisite: The 'Create Product' request must be run first.
+# Expected Result (in Database):
+#   - The `price` in the `product` table is updated to 75.0.
+#   - A new row in the `audit_log` table with action="UPDATE".
+#   - The `changesJson` will show {"price": "50.0 -> 75.0"}.
+#
+POST {{baseUrl}}/products/update-price/{{productId}}?price=75.0
+Content-Type: application/json
+
+
+### 3. Update the Product's Name
+#
+# Action: Sends a POST request to update the name of the same product.
+# Pre-requisite: The 'Create Product' request must be run first.
+# Expected Result (in Database):
+#   - The `name` in the `product` table is updated to "Ergonomic Gaming Mouse".
+#   - A new row in the `audit_log` table with action="UPDATE".
+#   - The `changesJson` will show {"name": "Gaming Mouse -> Ergonomic Gaming Mouse"}.
+#
+POST {{baseUrl}}/products/update-name/{{productId}}?name=Ergonomic Gaming Mouse
+Content-Type: application/json
